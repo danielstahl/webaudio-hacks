@@ -1,24 +1,62 @@
 import React, { Component } from 'react';
 
-import { Piano, KeyboardShortcuts, MidiNumbers } from 'react-piano';
-import 'react-piano/dist/styles.css';
-
-const firstNote = MidiNumbers.fromNote('c2')
-const lastNote = MidiNumbers.fromNote('c6')
-const keyboardShortcuts = KeyboardShortcuts.create({
-   firstNote: firstNote,
-   lastNote: lastNote,
-   keyboardConfig: KeyboardShortcuts.HOME_ROW,
- })
+const keyboardStyle = {
+  position: 'absolute',
+  left: '48px',
+  top: '160p',
+}
 
 class Keyboard extends Component {
+
+  componentDidMount() {
+    const keyboard = document.getElementById(this.props.controlId)
+    keyboard.addEventListener('change', (event) => this.keyboardChange(event))
+    keyboard.addEventListener('note', (event) => this.keyboardChange(event))
+
+    if(window.webAudioControlsMidiManager) {
+      console.log("Adding midilistener")
+      window.webAudioControlsMidiManager.addMidiListener((event) => this.midiEvent(event))
+    }
+  }
+
+  componentWillUnmount() {
+    const keyboard = document.getElementById(this.props.controlId)
+    keyboard.removeEventListener('change', (event) => this.keyboardChange(event))
+    keyboard.removeEventListener('note', (event) => this.keyboardChange(event))
+  }
+
+  keyboardChange(event) {
+    if(event.note) {
+      if(event.note[0]) {
+        this.props.noteOn(event.note[1])
+      } else {
+        this.props.noteOff(event.note[1])
+      }
+    } 
+  }
+
+  midiEvent(event) {
+    var data = event.data
+    var controlNumber = data[0]
+    
+    switch(controlNumber) {
+      case 144: 
+      this.props.noteOn(data[1])
+        break
+      case 128:
+      this.props.noteOff(data[1])
+        break
+      default:
+        console.log("Unhandled midi message", event)  
+    }
+    
+  }
+
   render() {
     return (
-      <Piano noteRange={{ first: firstNote, last: lastNote }}
-            playNote={(midiNumber) => this.props.noteOn(midiNumber)}
-            stopNote={(midiNumber) => this.props.noteOff(midiNumber)}
-            width={1000}
-            keyboardShortcuts={keyboardShortcuts}/>
+      <div>
+        <webaudio-keyboard id={this.props.controlId} width="1000" height="120" min="48" keys="48" style={keyboardStyle}></webaudio-keyboard>
+      </div>
     )
   }
 }

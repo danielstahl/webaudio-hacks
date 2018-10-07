@@ -73,12 +73,10 @@ class FmSynth extends Component {
     env.gain.setTargetAtTime(0, endTime, 0.2)
     carrier.stop(endTime + 1)
     carrier.onended = () => {
-      console.log("stopping", carrier)
       carrier.disconnect()
     }
     modulator.stop(endTime + 1)
     modulator.onended = () => {
-      console.log("stopping", modulator)
       modulator.disconnect()
       env.disconnect()
       modulatorGain.disconnect()
@@ -90,6 +88,7 @@ class FmSynth extends Component {
   }
 
   render() {
+    
     return (
       <div>
         <h1>FM Synth</h1>
@@ -99,7 +98,7 @@ class FmSynth extends Component {
         </label>
         <hr/>
 
-        <Keyboard noteOn={(midiNumber) => this.fmNoteOn(midiNumber)} noteOff={(midiNumber) => this.fmNoteOff(midiNumber)}/>
+        <Keyboard controlId="fmkeyboard" noteOn={(midiNumber) => this.fmNoteOn(midiNumber)} noteOff={(midiNumber) => this.fmNoteOff(midiNumber)}/>
 
       </div>
     )

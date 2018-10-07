@@ -58,7 +58,7 @@ class ModularSynth extends Component {
       secondOscillators: secondOscillators,
     })
     this.setState({
-        currentNotes: this.state.currentNotes
+      currentNotes: this.state.currentNotes
     })
   }
 
@@ -140,8 +140,7 @@ class ModularSynth extends Component {
             </select>
       Osc ratio {this.state.secondFrequencyRatio}: <input type="range" min="0.5" max="3.0" step="0.1" value={this.state.secondFrequencyRatio} onChange={(event) => this.handleChangeOscRatio(event, "second")} />
       <hr/>
-      <Keyboard noteOn={(midiNumber) => this.noteOn(midiNumber)} noteOff={(midiNumber) => this.noteOff(midiNumber)}/>
-
+      <Keyboard controlId="modularkeyboard" noteOn={(midiNumber) => this.noteOn(midiNumber)} noteOff={(midiNumber) => this.noteOff(midiNumber)}/>
     </div>)
   }
 }
