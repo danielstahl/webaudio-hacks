@@ -72,7 +72,17 @@ class FmSynth extends Component {
     modulatorGain.gain.setTargetAtTime(300, endTime, 0.2)
     env.gain.setTargetAtTime(0, endTime, 0.2)
     carrier.stop(endTime + 1)
+    carrier.onended = () => {
+      console.log("stopping", carrier)
+      carrier.disconnect()
+    }
     modulator.stop(endTime + 1)
+    modulator.onended = () => {
+      console.log("stopping", modulator)
+      modulator.disconnect()
+      env.disconnect()
+      modulatorGain.disconnect()
+    }
     this.state.currentNotes.delete(midiNumber)
     this.setState({
         currentNotes: this.state.currentNotes

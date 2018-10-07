@@ -71,8 +71,19 @@ class ModularSynth extends Component {
     const env = this.state.currentNotes.get(midiNumber).env
     env.gain.setTargetAtTime(0, endTime, 0.2)
 
-    firstOscillators.map((o) => o.stop(endTime + 1))
-    secondOscillators.map((o) => o.stop(endTime + 1))
+    firstOscillators.forEach((o) => {
+      o.stop(endTime + 1)
+      o.onended = () => {
+        o.disconnect()
+      }
+    })
+    secondOscillators.forEach((o) => {
+      o.stop(endTime + 1)
+      o.onended = () => {
+        o.disconnect()
+        env.disconnect()
+      }
+    })
 
     this.state.currentNotes.delete(midiNumber)
     this.setState({
