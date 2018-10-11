@@ -1,10 +1,5 @@
 import React, { Component } from 'react';
 
-const keyboardStyle = {
-  position: 'absolute',
-  left: '48px',
-  top: '160p',
-}
 
 class Keyboard extends Component {
 
@@ -54,9 +49,8 @@ class Keyboard extends Component {
 
   render() {
     return (
-      <div>
-        <webaudio-keyboard id={this.props.controlId} width="1000" height="120" min="48" keys="48" style={keyboardStyle}></webaudio-keyboard>
-      </div>
+        <webaudio-keyboard id={this.props.controlId} width="1000" height="120" min="48" keys="48" 
+                  style={{position: 'absolute',left: '48px',top: '160px'}}/>
     )
   }
 }
