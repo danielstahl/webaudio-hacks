@@ -49,8 +49,7 @@ class Keyboard extends Component {
 
   render() {
     return (
-        <webaudio-keyboard id={this.props.controlId} width="1000" height="120" min="48" keys="48" 
-                  style={{position: 'absolute',left: '48px',top: '160px'}}/>
+        <webaudio-keyboard id={this.props.controlId} width="1000" height="120" min="48" keys="48" />
     )
   }
 }

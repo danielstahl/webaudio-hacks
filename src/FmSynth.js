@@ -1,6 +1,9 @@
 import React, { Component } from 'react';
 import Utils from './Utils'
 import Keyboard from './Keyboard'
+import Envelope from './Envelope'
+import { Container, Row, Col } from 'reactstrap';
+import { Card, CardBody, CardTitle } from 'reactstrap';
 
 class FmSynth extends Component {
 
@@ -8,67 +11,41 @@ class FmSynth extends Component {
     super(props)
     this.state = {
       currentNotes: new Map(),
-      overallGain: 1.0,
-      attack: 0.1,
-      decay: 0.1,
       modulatorRatio: 1.0,
-      modulatorAmount: 300
+      modulatorPeak: 300,
+      volumeEnvelope: {}
     }
   }
 
 
   componentDidMount() {
-    const gain = document.getElementById('gainknob')
-    gain.addEventListener('change', (event) => this.handleChangeGain(event))
-
-    const attack = document.getElementById('attackknob')
-    attack.addEventListener('change', (event) => this.handleChangeAttack(event))
-
-    const decay = document.getElementById('decayknob')
-    decay.addEventListener('change', (event) => this.handleChangeDecay(event))
     
     const modRatio = document.getElementById('modratioknob')
     modRatio.addEventListener('change', (event) => this.handleChangeModulatorRatio(event))
 
-    const modAmount = document.getElementById('modamountknob')
-    modAmount.addEventListener('change', (event) => this.handleChangeModulatorAmount(event))
+    const modPeak = document.getElementById('modpeakknob')
+    modPeak.addEventListener('change', (event) => this.handleChangeModulatorPeak(event))
   }
 
   componentWillUnmount() {
-    const gain = document.getElementById('gainknob')
-    gain.removeEventListener('change', (event) => this.handleChangeGain(event))
-
-    const attack = document.getElementById('attackknob')
-    attack.removeEventListener('change', (event) => this.handleChangeAttack(event))
-
-    const decay = document.getElementById('decayknob')
-    decay.removeEventListener('change', (event) => this.handleChangeDecay(event))
 
     const modRatio = document.getElementById('modratioknob')
     modRatio.removeEventListener('change', (event) => this.handleChangeModulatorRatio(event))
 
-    const modAmount = document.getElementById('modamountknob')
-    modAmount.removeEventListener('change', (event) => this.handleChangeModulatorAmount(event))
-  }
-
-  handleChangeGain(event) {
-    this.setState({overallGain: event.target.value});
-  }
-
-  handleChangeAttack(event) {
-    this.setState({attack: event.target.value});
-  }
-
-  handleChangeDecay(event) {
-    this.setState({decay: event.target.value});
+    const modPeak = document.getElementById('modpeakknob')
+    modPeak.removeEventListener('change', (event) => this.handleChangeModulatorPeak(event))
   }
 
   handleChangeModulatorRatio(event) {
     this.setState({modulatorRatio: event.target.value});
   }
 
-  handleChangeModulatorAmount(event) {
-    this.setState({modulatorAmount: event.target.value});
+  handleChangeModulatorPeak(event) {
+    this.setState({modulatorPeak: event.target.value});
+  }
+
+  handleChangeVolumeEnvelope(envelope) {
+    this.setState({volumeEnvelope: envelope})
   }
 
   fmNoteOn(midiNumber) {
@@ -76,9 +53,11 @@ class FmSynth extends Component {
     const startTime = audioContext.currentTime
 
     const env = audioContext.createGain()
-    env.gain.value = 0
+    
+    env.gain.value= this.state.volumeEnvelope.minValue
     env.connect(audioContext.destination)
-    env.gain.setTargetAtTime(this.state.overallGain, startTime, this.state.attack)
+    env.gain.exponentialRampToValueAtTime(this.state.volumeEnvelope.peakValue, startTime + this.state.volumeEnvelope.attackTime)
+    env.gain.exponentialRampToValueAtTime(this.state.volumeEnvelope.sustainValue, startTime + this.state.volumeEnvelope.attackTime + this.state.volumeEnvelope.decayTime)
 
     const modulator = audioContext.createOscillator()
     modulator.frequency.value = Utils.toFreq(midiNumber) * this.state.modulatorRatio
@@ -87,7 +66,7 @@ class FmSynth extends Component {
     carrier.frequency.value = Utils.toFreq(midiNumber)
 
     const modulatorGain = audioContext.createGain()
-    modulatorGain.gain.value = this.state.modulatorAmount
+    modulatorGain.gain.value = this.state.modulatorPeak
 
     modulator.connect(modulatorGain)
     modulatorGain.connect(carrier.frequency)
@@ -117,8 +96,10 @@ class FmSynth extends Component {
     const modulator = currentNote.modulator
     const modulatorGain = currentNote.modulatorGain
 
-    const decay = this.state.decay
-    env.gain.setTargetAtTime(0, endTime, decay)
+    env.gain.cancelAndHoldAtTime(audioContext.currentTime)
+    env.gain.setTargetAtTime(this.state.volumeEnvelope.minValue, audioContext.currentTime + 0.01, this.state.volumeEnvelope.releaseTime)
+
+    const decay = this.state.volumeEnvelope.releaseTime
     carrier.stop(endTime + (decay * 5))
     carrier.onended = () => {
       carrier.disconnect()
@@ -135,36 +116,70 @@ class FmSynth extends Component {
     })
   }
 
+  /*
+  AttackTime = time it takes env to go to max
+  DecayTime = time it takes env to go to sustain
+  SustainLevel = level on the sustain part
+  PeakLevel = level on the peak of the envelope
+  MiniLevel = level on the start of the envelope
+  */ 
   render() {
-    
+
     return (
       <div>
         <h1>FM Synth</h1>
-        <div style={{position:'relative'}}>
-          <webaudio-knob id="gainknob" min="0.1" max="1.0" step="0.01" value="1.0" defvalue="1.0" diameter="48" style={{position:'absolute',left:'50px',top:'20px'}}/>
-          <webaudio-param link="gainknob" style={{position:'absolute',left:'60px',top:'75px'}}/>
-          <span style={{position:'absolute',left:'60px',top:'100px'}}>Gain</span>
-
-          <webaudio-knob id="attackknob" diameter="48" min="0.01" max="3.0" step="0.01" value="0.1" defvalue="0.1" style={{position:'absolute',left:'150px',top:'20px'}}></webaudio-knob>
-          <webaudio-param link="attackknob" style={{position:'absolute',left:'160px',top:'75px'}}></webaudio-param>
-          <span style={{position:'absolute',left:'150px',top:'100px'}}>Attack</span>
-
-          <webaudio-knob id="decayknob" diameter="48" min="0.01" max="3.0" step="0.01" value="0.1" defvalue="0.1" style={{position:'absolute',left:'250px',top:'20px'}}></webaudio-knob>
-          <webaudio-param link="decayknob" style={{position:'absolute',left:'260px',top:'75px'}}></webaudio-param>
-          <span style={{position:'absolute',left:'250px',top:'100px'}}>Decay</span>
-
-          <webaudio-knob id="modratioknob" diameter="48" min="0.5" max="3.0" step="0.1" value="1.0" defvalue="1.0" style={{position:'absolute',left:'350px',top:'20px'}}></webaudio-knob>
-          <webaudio-param link="modratioknob" style={{position:'absolute',left:'360px',top:'75px'}}></webaudio-param>
-          <span style={{position:'absolute',left:'330px',top:'100px'}}>Mod Ratio</span>
-
-          <webaudio-knob id="modamountknob" diameter="48" min="30" max="5000" step="10" value="300" defvalue="300" style={{position:'absolute',left:'450px',top:'20px'}}></webaudio-knob>
-          <webaudio-param link="modamountknob" style={{position:'absolute',left:'460px',top:'75px'}}></webaudio-param>
-          <span style={{position:'absolute',left:'430px',top:'100px'}}>Mod Amount</span>
-
-          <Keyboard controlId="fmkeyboard" noteOn={(midiNumber) => this.fmNoteOn(midiNumber)} noteOff={(midiNumber) => this.fmNoteOff(midiNumber)}/>
-        </div>
         
+        <Container>
+          <Row className="align-items-center">
+            
+                        
+            <Col className="text-center">
+              <div><webaudio-knob id="modratioknob" diameter="48" min="0.25" max="3.0" step="0.05" value="1.0" defvalue="1.0"></webaudio-knob></div>
+              <div><webaudio-param link="modratioknob"></webaudio-param></div>
+              <span>Mod Ratio</span>
+            </Col>
+            
+            <Envelope id="volume" min="0.01" max="2.0" step="0.01" title="Volume" changeEnvelope={(envelope) => this.handleChangeVolumeEnvelope(envelope)}/>
+            
+            <Card>
+              <CardBody>
+                <CardTitle>Mod Envelope</CardTitle>
+                <Container>
+                  <Row>
+                    <Col className="text-center">
+                        <div><webaudio-knob id="modpeakknob" diameter="32" min="30" max="5000" step="10" value="300" defvalue="300"></webaudio-knob></div>
+                        <div><webaudio-param link="modpeakknob"/></div>
+                        <span>Mod Peak</span>
 
+                        <div><webaudio-knob id="modsustainknob" diameter="32" min="30" max="5000" step="10" value="300" defvalue="300"></webaudio-knob></div>
+                        <div><webaudio-param link="modsustainknob"/></div>
+                        <span>Mod Sustain</span>
+                    </Col>
+
+                    <Col className="text-center">
+
+                      <div><webaudio-slider id="attackslider" direction="horz" height="18" min="0.01" max="3.0" step="0.01" value="0.01" defValue="0.01"/><webaudio-param link="attackslider"/></div>
+                      <span>Attack</span>
+                      <div><webaudio-slider id="decayslider" direction="horz" height="18" min="0.01" max="3.0" step="0.01" value="0.1" defValue="0.1"/><webaudio-param link="decayslider"/></div>
+                      <span>Decay</span>
+                      <div><webaudio-slider id="releaseslider" direction="horz" height="18" min="0.01" max="3.0" step="0.01" value="0.3" defValue="0.3"/><webaudio-param link="releaseslider"/></div>
+                      <span>Release</span>
+                    </Col>
+                  </Row>
+                </Container>    
+              </CardBody>
+            </Card>
+
+          </Row>
+
+    
+          
+          <Row>
+            <Col sm={12}>
+              <Keyboard controlId="fmkeyboard" noteOn={(midiNumber) => this.fmNoteOn(midiNumber)} noteOff={(midiNumber) => this.fmNoteOff(midiNumber)}/>
+            </Col>
+          </Row>    
+        </Container>
       </div>
     )
   }
